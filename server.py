@@ -1,5 +1,6 @@
 import json
 import sys
+import os
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -8,7 +9,6 @@ from urllib.parse import urlparse
 from psycopg2.extras import RealDictCursor
 
 SERVER_DIR = Path(__file__).resolve().parent
-CLIENT_DIR = SERVER_DIR.parent / "docs"
 if str(SERVER_DIR) not in sys.path:
     sys.path.insert(0, str(SERVER_DIR))
 
@@ -48,9 +48,6 @@ def course_action(percent):
 
 
 class AppHandler(SimpleHTTPRequestHandler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=str(CLIENT_DIR), **kwargs)
-
     def do_OPTIONS(self):
         self.send_response(HTTPStatus.NO_CONTENT)
         self._send_cors_headers()
@@ -58,6 +55,7 @@ class AppHandler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
+
         if parsed.path == "/api/health":
             self._send_json({"ok": True})
             return
@@ -72,10 +70,11 @@ class AppHandler(SimpleHTTPRequestHandler):
             self._handle_get_materials(user_id)
             return
 
-        super().do_GET()
+        self._send_json({"error": "Not found"}, status=HTTPStatus.NOT_FOUND)
 
     def do_POST(self):
         parsed = urlparse(self.path)
+
         if parsed.path == "/api/auth/platform":
             self._handle_auth_platform()
             return
@@ -322,8 +321,9 @@ class AppHandler(SimpleHTTPRequestHandler):
 
 
 def run():
-    server = ThreadingHTTPServer(("127.0.0.1", 8000), AppHandler)
-    print("Server started at http://127.0.0.1:8000")
+    port = int(os.environ.get("PORT", 8000))
+    server = ThreadingHTTPServer(("0.0.0.0", port), AppHandler)
+    print(f"Server started at http://0.0.0.0:{port}")
     server.serve_forever()
 
 
