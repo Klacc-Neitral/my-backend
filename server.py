@@ -732,7 +732,6 @@ class AppHandler(SimpleHTTPRequestHandler):
 
 def run():
     get_jwt_secret()
-    ensure_schema()
     port = int(os.environ.get("PORT", 8000))
     server = ThreadingHTTPServer(
         ("0.0.0.0", port),
